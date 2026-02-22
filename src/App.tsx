@@ -49,6 +49,8 @@ interface Pet {
   rarity: 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
   icon: any;
   color: string;
+  bg: string;
+  border: string;
 }
 
 interface EggType {
@@ -153,6 +155,23 @@ const UPGRADES: Upgrade[] = [
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.6.1',
+    date: '2026-02-22',
+    codename: 'RARITY-GLOW',
+    publicTitle: 'The Rarity Visuals Update',
+    category: 'Visual Enhancement',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Make pet rarities immediately recognizable.',
+          'Problem Solved: All pets looked too similar in the inventory.',
+          'Player Impact: Distinct color schemes and borders for each rarity tier.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.6.0',
     date: '2026-02-22',
@@ -385,13 +404,76 @@ const CHANGELOG: ChangelogEntry[] = [
 ];
 
 const PETS: Record<string, Pet> = {
-  'dog': { id: 'dog', name: 'Dog', multiplier: 1.2, rarity: 'Common', icon: Dog, color: 'text-slate-400' },
-  'cat': { id: 'cat', name: 'Cat', multiplier: 1.2, rarity: 'Common', icon: Cat, color: 'text-slate-400' },
-  'rabbit': { id: 'rabbit', name: 'Rabbit', multiplier: 1.5, rarity: 'Uncommon', icon: Rabbit, color: 'text-emerald-400' },
-  'bird': { id: 'bird', name: 'Bird', multiplier: 1.5, rarity: 'Uncommon', icon: Bird, color: 'text-emerald-400' },
-  'ghost': { id: 'ghost', name: 'Ghost', multiplier: 2.5, rarity: 'Rare', icon: Ghost, color: 'text-blue-400' },
-  'dragon': { id: 'dragon', name: 'Dragon', multiplier: 5.0, rarity: 'Epic', icon: Flame, color: 'text-purple-400' },
-  'unicorn': { id: 'unicorn', name: 'Unicorn', multiplier: 15.0, rarity: 'Legendary', icon: Star, color: 'text-amber-400' },
+  'dog': { 
+    id: 'dog', 
+    name: 'Dog', 
+    multiplier: 1.2, 
+    rarity: 'Common', 
+    icon: Dog, 
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/20'
+  },
+  'cat': { 
+    id: 'cat', 
+    name: 'Cat', 
+    multiplier: 1.2, 
+    rarity: 'Common', 
+    icon: Cat, 
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/20'
+  },
+  'rabbit': { 
+    id: 'rabbit', 
+    name: 'Rabbit', 
+    multiplier: 1.5, 
+    rarity: 'Uncommon', 
+    icon: Rabbit, 
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20'
+  },
+  'bird': { 
+    id: 'bird', 
+    name: 'Bird', 
+    multiplier: 1.5, 
+    rarity: 'Uncommon', 
+    icon: Bird, 
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20'
+  },
+  'ghost': { 
+    id: 'ghost', 
+    name: 'Ghost', 
+    multiplier: 2.5, 
+    rarity: 'Rare', 
+    icon: Ghost, 
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20'
+  },
+  'dragon': { 
+    id: 'dragon', 
+    name: 'Dragon', 
+    multiplier: 5.0, 
+    rarity: 'Epic', 
+    icon: Flame, 
+    color: 'text-purple-400',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/20'
+  },
+  'unicorn': { 
+    id: 'unicorn', 
+    name: 'Unicorn', 
+    multiplier: 15.0, 
+    rarity: 'Legendary', 
+    icon: Star, 
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/20'
+  },
 };
 
 const EGGS: EggType[] = [
@@ -723,7 +805,7 @@ export default function App() {
               onClick={() => setShowChangelog(true)}
               className="flex items-center gap-1 group"
             >
-              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.6.0</p>
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.6.1</p>
               <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
             </button>
           </div>
@@ -1006,16 +1088,18 @@ export default function App() {
                             onClick={() => togglePet(owned.instanceId)}
                             className={cn(
                               "w-full p-4 rounded-2xl border transition-all text-left flex justify-between items-center",
-                              isEquipped ? "bg-emerald-500/20 border-emerald-500/50" : "bg-slate-800/50 border-white/10 hover:bg-slate-800"
+                              isEquipped 
+                                ? "bg-emerald-500/20 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]" 
+                                : cn("bg-slate-800/50 border-white/10 hover:bg-slate-800", pet.border)
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <div className={cn("w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center", pet.color)}>
+                              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", pet.bg, pet.color)}>
                                 <pet.icon className="w-6 h-6" />
                               </div>
                               <div>
                                 <h4 className="font-bold text-sm text-slate-200">{pet.name}</h4>
-                                <p className={cn("text-[10px] font-bold uppercase", pet.color)}>{pet.rarity}</p>
+                                <p className={cn("text-[10px] font-bold uppercase tracking-wider", pet.color)}>{pet.rarity}</p>
                               </div>
                             </div>
                             <div className="text-right">
@@ -1298,7 +1382,7 @@ export default function App() {
                   transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
                   className="absolute inset-[-40px] border-2 border-dashed border-emerald-500/20 rounded-full"
                 />
-                <div className={cn("w-32 h-32 mx-auto bg-white/5 rounded-3xl flex items-center justify-center shadow-2xl", hatchingPet.color)}>
+                <div className={cn("w-32 h-32 mx-auto rounded-3xl flex items-center justify-center shadow-2xl relative z-10", hatchingPet.bg, hatchingPet.color, "border-2", hatchingPet.border)}>
                   <hatchingPet.icon className="w-20 h-20" />
                 </div>
               </div>
