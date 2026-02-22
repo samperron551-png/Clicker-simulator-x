@@ -19,6 +19,9 @@ import {
   Ghost,
   Flame,
   Star,
+  Mouse,
+  Turtle,
+  Fish,
   X,
   Settings,
   Volume2,
@@ -63,6 +66,15 @@ interface EggType {
 interface OwnedPet {
   instanceId: string;
   petId: string;
+}
+
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: any;
+  bonus: number;
+  condition: (state: any) => boolean;
 }
 
 interface FloatingText {
@@ -155,6 +167,58 @@ const UPGRADES: Upgrade[] = [
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.8.0',
+    date: '2026-02-22',
+    codename: 'LEGACY-TROPHY',
+    publicTitle: 'The Achievements Update',
+    category: 'Major Feature / Progression',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Provide long-term goals and permanent rewards.',
+          'Problem Solved: Progression felt purely linear; added milestones with bonuses.',
+          'Player Impact: Unlock achievements to gain permanent global multipliers!'
+        ]
+      },
+      {
+        title: '3️⃣ PRIMARY FEATURE DROP',
+        items: [
+          '⭐ Feature: Achievements System - 8 unique milestones to reach.',
+          '⭐ Reward: Permanent Multipliers - Each achievement adds to your global multiplier.',
+          '⭐ UI: Achievement Notifications - Visual feedback when you hit a milestone.',
+          '⭐ UI: Achievement List - Track your progress in the Stats tab.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.7.0',
+    date: '2026-02-22',
+    codename: 'PET-DIVERSITY',
+    publicTitle: 'The Pet Diversity Update',
+    category: 'Major Content / QoL',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Diversify the pet collection and streamline management.',
+          'Problem Solved: Pets felt redundant with overlapping multipliers and egg pools.',
+          'Player Impact: Each egg now has a unique set of pets, all pets have unique multipliers, and "Equip Best" makes management effortless.'
+        ]
+      },
+      {
+        title: '3️⃣ PRIMARY FEATURE DROP',
+        items: [
+          '⭐ Feature: Equip Best - Instantly equip your 3 most powerful pets with one click.',
+          '⭐ Content: Expanded Pet Roster - New pets like Mouse, Turtle, and Fish join the collection.',
+          '⭐ Balance: Unique Multipliers - Every pet now has a distinct multiplier value.',
+          '⭐ System: Unique Egg Pools - Each egg type now hatches a completely different set of pets.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.6.2',
     date: '2026-02-22',
@@ -424,7 +488,7 @@ const PETS: Record<string, Pet> = {
   'dog': { 
     id: 'dog', 
     name: 'Dog', 
-    multiplier: 1.2, 
+    multiplier: 1.1, 
     rarity: 'Common', 
     icon: Dog, 
     color: 'text-slate-400',
@@ -441,10 +505,20 @@ const PETS: Record<string, Pet> = {
     bg: 'bg-slate-500/10',
     border: 'border-slate-500/20'
   },
+  'mouse': { 
+    id: 'mouse', 
+    name: 'Mouse', 
+    multiplier: 1.3, 
+    rarity: 'Common', 
+    icon: Mouse, 
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/20'
+  },
   'rabbit': { 
     id: 'rabbit', 
     name: 'Rabbit', 
-    multiplier: 1.5, 
+    multiplier: 1.6, 
     rarity: 'Uncommon', 
     icon: Rabbit, 
     color: 'text-emerald-400',
@@ -454,17 +528,37 @@ const PETS: Record<string, Pet> = {
   'bird': { 
     id: 'bird', 
     name: 'Bird', 
-    multiplier: 1.5, 
+    multiplier: 2.0, 
     rarity: 'Uncommon', 
     icon: Bird, 
     color: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/20'
   },
+  'turtle': { 
+    id: 'turtle', 
+    name: 'Turtle', 
+    multiplier: 2.5, 
+    rarity: 'Uncommon', 
+    icon: Turtle, 
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20'
+  },
+  'fish': { 
+    id: 'fish', 
+    name: 'Fish', 
+    multiplier: 3.5, 
+    rarity: 'Rare', 
+    icon: Fish, 
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20'
+  },
   'ghost': { 
     id: 'ghost', 
     name: 'Ghost', 
-    multiplier: 2.5, 
+    multiplier: 5.0, 
     rarity: 'Rare', 
     icon: Ghost, 
     color: 'text-blue-400',
@@ -474,7 +568,7 @@ const PETS: Record<string, Pet> = {
   'dragon': { 
     id: 'dragon', 
     name: 'Dragon', 
-    multiplier: 5.0, 
+    multiplier: 15.0, 
     rarity: 'Epic', 
     icon: Flame, 
     color: 'text-purple-400',
@@ -484,7 +578,7 @@ const PETS: Record<string, Pet> = {
   'unicorn': { 
     id: 'unicorn', 
     name: 'Unicorn', 
-    multiplier: 15.0, 
+    multiplier: 50.0, 
     rarity: 'Legendary', 
     icon: Star, 
     color: 'text-amber-400',
@@ -499,9 +593,9 @@ const EGGS: EggType[] = [
     name: 'Basic Egg',
     cost: 500,
     pets: [
-      { petId: 'dog', chance: 45 },
-      { petId: 'cat', chance: 45 },
-      { petId: 'rabbit', chance: 10 },
+      { petId: 'dog', chance: 40 },
+      { petId: 'cat', chance: 40 },
+      { petId: 'mouse', chance: 20 },
     ]
   },
   {
@@ -511,7 +605,7 @@ const EGGS: EggType[] = [
     pets: [
       { petId: 'rabbit', chance: 40 },
       { petId: 'bird', chance: 40 },
-      { petId: 'ghost', chance: 20 },
+      { petId: 'turtle', chance: 20 },
     ]
   },
   {
@@ -519,10 +613,78 @@ const EGGS: EggType[] = [
     name: 'Legendary Egg',
     cost: 50000,
     pets: [
-      { petId: 'ghost', chance: 60 },
-      { petId: 'dragon', chance: 35 },
+      { petId: 'fish', chance: 50 },
+      { petId: 'ghost', chance: 30 },
+      { petId: 'dragon', chance: 15 },
       { petId: 'unicorn', chance: 5 },
     ]
+  }
+];
+
+const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'first_click',
+    name: 'First Step',
+    description: 'Click the main button for the first time.',
+    icon: MousePointer2,
+    bonus: 0.05,
+    condition: (s) => s.totalClicksEver >= 1
+  },
+  {
+    id: 'click_1000',
+    name: 'Dedicated Clicker',
+    description: 'Reach 1,000 total clicks.',
+    icon: Zap,
+    bonus: 0.05,
+    condition: (s) => s.totalClicksEver >= 1000
+  },
+  {
+    id: 'click_10000',
+    name: 'Click Master',
+    description: 'Reach 10,000 total clicks.',
+    icon: Sparkles,
+    bonus: 0.10,
+    condition: (s) => s.totalClicksEver >= 10000
+  },
+  {
+    id: 'hatch_10',
+    name: 'Egg Enthusiast',
+    description: 'Hatch 10 eggs.',
+    icon: Egg,
+    bonus: 0.05,
+    condition: (s) => s.totalEggsHatched >= 10
+  },
+  {
+    id: 'rebirth_1',
+    name: 'New Beginning',
+    description: 'Rebirth for the first time.',
+    icon: RotateCcw,
+    bonus: 0.10,
+    condition: (s) => s.rebirths >= 1
+  },
+  {
+    id: 'rebirth_10',
+    name: 'Eternal Cycle',
+    description: 'Rebirth 10 times.',
+    icon: Trophy,
+    bonus: 0.20,
+    condition: (s) => s.rebirths >= 10
+  },
+  {
+    id: 'pet_5',
+    name: 'Pet Lover',
+    description: 'Own 5 pets at once.',
+    icon: Dog,
+    bonus: 0.05,
+    condition: (s) => s.ownedPets.length >= 5
+  },
+  {
+    id: 'millionaire',
+    name: 'Click Millionaire',
+    description: 'Have 1,000,000 clicks current.',
+    icon: TrendingUp,
+    bonus: 0.15,
+    condition: (s) => s.clicks >= 1000000
   }
 ];
 
@@ -536,12 +698,15 @@ export default function App() {
   const [ownedUpgrades, setOwnedUpgrades] = useState<Record<string, number>>({});
   const [ownedPets, setOwnedPets] = useState<OwnedPet[]>([]);
   const [equippedPets, setEquippedPets] = useState<string[]>([]);
+  const [completedAchievements, setCompletedAchievements] = useState<string[]>([]);
+  const [totalEggsHatched, setTotalEggsHatched] = useState<number>(0);
   
   // UI State
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const [activeTab, setActiveTab] = useState<'shop' | 'pets' | 'stats' | 'settings'>('shop');
   const [isClicking, setIsClicking] = useState(false);
   const [hatchingPet, setHatchingPet] = useState<Pet | null>(null);
+  const [unlockedAchievement, setUnlockedAchievement] = useState<Achievement | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   
@@ -566,7 +731,12 @@ export default function App() {
     return acc;
   }, 1);
 
-  const globalMultiplier = (1 + (rebirths * 1)) * petMultiplier; // 2x, 3x, 4x...
+  const achievementMultiplier = completedAchievements.reduce((acc, id) => {
+    const achievement = ACHIEVEMENTS.find(a => a.id === id);
+    return acc + (achievement?.bonus || 0);
+  }, 1);
+
+  const globalMultiplier = (1 + rebirths) * petMultiplier * achievementMultiplier;
 
   const clickPower = (1 + Object.entries(ownedUpgrades).reduce((acc, [id, count]) => {
     const upgrade = UPGRADES.find(u => u.id === id);
@@ -595,6 +765,8 @@ export default function App() {
         setOwnedUpgrades(data.ownedUpgrades || {});
         setOwnedPets(data.ownedPets || []);
         setEquippedPets(data.equippedPets || []);
+        setCompletedAchievements(data.completedAchievements || []);
+        setTotalEggsHatched(data.totalEggsHatched || 0);
         if (data.settings) setSettings(data.settings);
 
         // Offline Earnings Calculation
@@ -638,6 +810,8 @@ export default function App() {
         ownedUpgrades, 
         ownedPets, 
         equippedPets, 
+        completedAchievements,
+        totalEggsHatched,
         settings,
         lastSaveTime: Date.now()
       };
@@ -766,6 +940,7 @@ export default function App() {
       }
       
       setOwnedPets(prev => [...prev, ...newPets]);
+      setTotalEggsHatched(prev => prev + count);
       if (lastPet) setHatchingPet(lastPet);
       
       setTimeout(() => setHatchingPet(null), 3000);
@@ -785,6 +960,54 @@ export default function App() {
       }
     });
   };
+
+  const equipBestPets = () => {
+    if (ownedPets.length === 0) return;
+    
+    // Sort all owned pets by their multiplier descending
+    const sorted = [...ownedPets].sort((a, b) => {
+      const multA = PETS[a.petId].multiplier;
+      const multB = PETS[b.petId].multiplier;
+      return multB - multA;
+    });
+
+    // Take top 3
+    const best = sorted.slice(0, 3).map(p => p.instanceId);
+    setEquippedPets(best);
+  };
+
+  // Achievement Check
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const state = {
+      clicks,
+      totalClicksEver,
+      rebirths,
+      ownedPets,
+      totalEggsHatched
+    };
+
+    ACHIEVEMENTS.forEach(achievement => {
+      if (!completedAchievements.includes(achievement.id) && achievement.condition(state)) {
+        setCompletedAchievements(prev => [...prev, achievement.id]);
+        setUnlockedAchievement(achievement);
+        
+        // Auto-hide notification after 5 seconds
+        setTimeout(() => {
+          setUnlockedAchievement(null);
+        }, 5000);
+
+        // Confetti for achievement!
+        confetti({
+          particleCount: 50,
+          spread: 40,
+          origin: { y: 0.9 },
+          colors: ['#10b981', '#3b82f6', '#f59e0b']
+        });
+      }
+    });
+  }, [clicks, totalClicksEver, rebirths, ownedPets, totalEggsHatched, completedAchievements, isLoaded]);
 
   // Auto-clicker loop
   useEffect(() => {
@@ -820,7 +1043,7 @@ export default function App() {
               onClick={() => setShowChangelog(true)}
               className="flex items-center gap-1 group"
             >
-              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.6.2</p>
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.8.0</p>
               <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
             </button>
           </div>
@@ -1080,10 +1303,18 @@ export default function App() {
 
             {activeTab === 'pets' && (
               <div className="space-y-6">
-                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                  <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Equipped Multiplier</p>
-                  <p className="text-2xl font-black text-white">{petMultiplier.toFixed(1)}x</p>
-                  <p className="text-[10px] text-emerald-500/60 font-medium mt-1">Max 3 pets equipped at once</p>
+                <div className="flex justify-between items-end">
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex-1 mr-3">
+                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Equipped Multiplier</p>
+                    <p className="text-2xl font-black text-white">{petMultiplier.toFixed(1)}x</p>
+                    <p className="text-[10px] text-emerald-500/60 font-medium mt-1">Max 3 pets equipped at once</p>
+                  </div>
+                  <button
+                    onClick={equipBestPets}
+                    className="px-4 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all"
+                  >
+                    Equip Best
+                  </button>
                 </div>
 
                 <div className="space-y-3">
@@ -1373,6 +1604,29 @@ export default function App() {
                 ))}
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Achievement Unlock Notification */}
+      <AnimatePresence>
+        {unlockedAchievement && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[150] w-[90%] max-w-xs"
+          >
+            <div className="bg-slate-900 border-2 border-emerald-500/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.2)] flex items-center gap-4">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 shrink-0">
+                <unlockedAchievement.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-0.5">Achievement Unlocked!</p>
+                <h4 className="font-bold text-white text-sm">{unlockedAchievement.name}</h4>
+                <p className="text-[10px] text-slate-400 font-medium">+{unlockedAchievement.bonus * 100}% Global Multiplier</p>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
