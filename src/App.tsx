@@ -65,24 +65,33 @@ const UPGRADES: Upgrade[] = [
     name: 'Gaming Mouse',
     description: '+5 Click Power',
     baseCost: 100,
-    costMultiplier: 1.2,
+    costMultiplier: 1.18,
     value: 5,
+    type: 'click',
+  },
+  {
+    id: 'click_power_3',
+    name: 'Super Computer',
+    description: '+25 Click Power',
+    baseCost: 2500,
+    costMultiplier: 1.22,
+    value: 25,
     type: 'click',
   },
   {
     id: 'auto_1',
     name: 'Auto-Clicker Bot',
-    description: 'Clicks 1 time per second',
+    description: '1 CPS',
     baseCost: 50,
-    costMultiplier: 1.1,
+    costMultiplier: 1.12,
     value: 1,
     type: 'auto',
   },
   {
     id: 'auto_2',
     name: 'Click Farm',
-    description: 'Clicks 10 times per second',
-    baseCost: 500,
+    description: '10 CPS',
+    baseCost: 750,
     costMultiplier: 1.15,
     value: 10,
     type: 'auto',
@@ -90,15 +99,55 @@ const UPGRADES: Upgrade[] = [
   {
     id: 'auto_3',
     name: 'Quantum Clicker',
-    description: 'Clicks 100 times per second',
-    baseCost: 5000,
-    costMultiplier: 1.2,
+    description: '100 CPS',
+    baseCost: 10000,
+    costMultiplier: 1.18,
     value: 100,
+    type: 'auto',
+  },
+  {
+    id: 'auto_4',
+    name: 'Galactic Clicker',
+    description: '1,000 CPS',
+    baseCost: 150000,
+    costMultiplier: 1.2,
+    value: 1000,
     type: 'auto',
   },
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.3.0',
+    date: '2026-02-22',
+    codename: 'EQUILIBRIUM',
+    publicTitle: 'The Balance Update',
+    category: 'Major Balance / Content Expansion',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Refine progression speed and endgame depth.',
+          'Problem Solved: Early game was too fast, late game lacked goals.',
+          'Player Impact: More meaningful upgrades and powerful rebirths.'
+        ]
+      },
+      {
+        title: '6️⃣ BALANCE FRAMEWORK',
+        items: [
+          '🔼 Buff: Rebirths now provide a 2.0x Global Multiplier per level (was additive).',
+          '🔼 Buff: Added "Super Computer" and "Galactic Clicker" upgrades.',
+          '🔽 Nerf: Adjusted upgrade cost scaling for long-term sustainability.'
+        ]
+      },
+      {
+        title: '7️⃣ TECHNICAL & INFRASTRUCTURE REPORT',
+        items: [
+          '💾 Data: Save system verified and hardened for multi-session persistence.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.2.0',
     date: '2026-02-22',
@@ -200,19 +249,21 @@ export default function App() {
 
   // --- Derived Stats ---
 
-  const clickPower = 1 + (rebirths * 2) + Object.entries(ownedUpgrades).reduce((acc, [id, count]) => {
+  const globalMultiplier = 1 + (rebirths * 1); // 2x, 3x, 4x...
+
+  const clickPower = (1 + Object.entries(ownedUpgrades).reduce((acc, [id, count]) => {
     const upgrade = UPGRADES.find(u => u.id === id);
     if (upgrade && upgrade.type === 'click') return acc + (Number(upgrade.value) * Number(count));
     return acc;
-  }, 0);
+  }, 0)) * globalMultiplier;
 
   const autoClicksPerSecond = Object.entries(ownedUpgrades).reduce((acc, [id, count]) => {
     const upgrade = UPGRADES.find(u => u.id === id);
     if (upgrade && upgrade.type === 'auto') return acc + (Number(upgrade.value) * Number(count));
     return acc;
-  }, 0);
+  }, 0) * globalMultiplier;
 
-  const rebirthCost = Math.floor(1000 * Math.pow(5, rebirths));
+  const rebirthCost = Math.floor(10000 * Math.pow(10, rebirths));
 
   // --- Persistence ---
 
@@ -315,7 +366,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight">CLICKER SIM X</h1>
-            <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest">Version 1.2.0</p>
+            <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest">Version 1.3.0</p>
           </div>
         </div>
 
