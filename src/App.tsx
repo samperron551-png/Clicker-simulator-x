@@ -154,6 +154,23 @@ const UPGRADES: Upgrade[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.5.1',
+    date: '2026-02-22',
+    codename: 'SAVE-SURE',
+    publicTitle: 'The Data Integrity Patch',
+    category: 'Critical Bugfix',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Fix a critical bug where data was being overwritten on load.',
+          'Problem Solved: Race condition between loading and auto-saving.',
+          'Player Impact: Your progress is now safely persisted across sessions.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.5.0',
     date: '2026-02-22',
     codename: 'CONTROL-PANEL',
@@ -401,6 +418,7 @@ export default function App() {
   const [isClicking, setIsClicking] = useState(false);
   const [hatchingPet, setHatchingPet] = useState<Pet | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   // Settings State
   const [settings, setSettings] = useState({
@@ -457,12 +475,17 @@ export default function App() {
         console.error('Failed to load save', e);
       }
     }
+    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
-    const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings };
-    localStorage.setItem('clicker_sim_save', JSON.stringify(data));
-  }, [clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings]);
+    if (!isLoaded) return;
+    const timeout = setTimeout(() => {
+      const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings };
+      localStorage.setItem('clicker_sim_save', JSON.stringify(data));
+    }, 2000); // Debounce save to every 2 seconds for performance
+    return () => clearTimeout(timeout);
+  }, [clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings, isLoaded]);
 
   // --- Game Logic ---
 
@@ -605,7 +628,7 @@ export default function App() {
               onClick={() => setShowChangelog(true)}
               className="flex items-center gap-1 group"
             >
-              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.5.0</p>
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.5.1</p>
               <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
             </button>
           </div>
