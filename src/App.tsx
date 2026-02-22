@@ -148,6 +148,30 @@ const UPGRADES: Upgrade[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.4.1',
+    date: '2026-02-22',
+    codename: 'DATA-LOCK',
+    publicTitle: 'The Persistence Patch',
+    category: 'Systems Patch / UI Refinement',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Ensure player progress is never lost.',
+          'Problem Solved: UI clutter in the changelog modal.',
+          'Player Impact: Faster loading and a cleaner interface.'
+        ]
+      },
+      {
+        title: '1️⃣0️⃣ USER EXPERIENCE REFINEMENT',
+        items: [
+          '• Log Focus: The update modal now exclusively displays the latest version.',
+          '• Data Integrity: Verified auto-save functionality for all game systems.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.0',
     date: '2026-02-22',
     codename: 'PET-PALOOZA',
@@ -534,7 +558,7 @@ export default function App() {
               onClick={() => setShowChangelog(true)}
               className="flex items-center gap-1 group"
             >
-              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.3.0</p>
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.4.1</p>
               <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
             </button>
           </div>
@@ -949,7 +973,7 @@ export default function App() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                {CHANGELOG.map(entry => (
+                {CHANGELOG.slice(0, 1).map(entry => (
                   <div key={entry.version} className="relative pl-6 border-l border-slate-800">
                     <div className="absolute left-[-5px] top-0 w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                     
