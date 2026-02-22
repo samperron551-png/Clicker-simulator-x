@@ -100,6 +100,30 @@ const UPGRADES: Upgrade[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.2.0',
+    date: '2026-02-22',
+    codename: 'FOCUS-VIEW',
+    publicTitle: 'The UI Focus Update',
+    category: 'Systems Patch / UI Refinement',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Streamline information delivery.',
+          'Problem Solved: Changelog clutter reduced.',
+          'Player Impact: Immediate access to the latest changes.'
+        ]
+      },
+      {
+        title: '1️⃣0️⃣ USER EXPERIENCE REFINEMENT',
+        items: [
+          '• Log Focus: The changelog now exclusively displays the most recent update.',
+          '• Auto-Update: System logs now synchronize with the latest build data.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.1.0',
     date: '2026-02-22',
     codename: 'MOBILITY-PRIME',
@@ -291,7 +315,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight">CLICKER SIM X</h1>
-            <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest">Version 1.1.0</p>
+            <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest">Version 1.2.0</p>
           </div>
         </div>
 
@@ -567,7 +591,7 @@ export default function App() {
 
             {activeTab === 'changelog' && (
               <div className="space-y-8">
-                {CHANGELOG.map(entry => (
+                {CHANGELOG.slice(0, 1).map(entry => (
                   <div key={entry.version} className="relative pl-6 border-l border-slate-800">
                     <div className="absolute left-[-5px] top-0 w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                     
