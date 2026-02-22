@@ -19,7 +19,13 @@ import {
   Ghost,
   Flame,
   Star,
-  X
+  X,
+  Settings,
+  Volume2,
+  VolumeX,
+  Eye,
+  EyeOff,
+  Smartphone
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cn } from '@/src/lib/utils';
@@ -147,6 +153,32 @@ const UPGRADES: Upgrade[] = [
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.5.0',
+    date: '2026-02-22',
+    codename: 'CONTROL-PANEL',
+    publicTitle: 'The Settings Update',
+    category: 'Major Feature / UI Refinement',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Give players control over their experience.',
+          'Problem Solved: UI clutter in Stats and lack of customization.',
+          'Player Impact: Toggle visual effects and manage data in a dedicated space.'
+        ]
+      },
+      {
+        title: '3️⃣ PRIMARY FEATURE DROP',
+        items: [
+          '⭐ Headline: Settings Tab - A new home for game configuration.',
+          '⭐ Toggle: Floating Text - Disable click numbers for better performance.',
+          '⭐ Toggle: Low Graphics - Reduce visual complexity.',
+          '⭐ System: Data Management - Moved save/reset controls to Settings.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.4.1',
     date: '2026-02-22',
@@ -365,10 +397,17 @@ export default function App() {
   
   // UI State
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
-  const [activeTab, setActiveTab] = useState<'shop' | 'pets' | 'stats'>('shop');
+  const [activeTab, setActiveTab] = useState<'shop' | 'pets' | 'stats' | 'settings'>('shop');
   const [isClicking, setIsClicking] = useState(false);
   const [hatchingPet, setHatchingPet] = useState<Pet | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  
+  // Settings State
+  const [settings, setSettings] = useState({
+    showFloatingText: true,
+    lowGraphics: false,
+    vibration: true,
+  });
 
   // Refs for game loop
   const lastAutoClickTime = useRef<number>(0);
@@ -413,6 +452,7 @@ export default function App() {
         setOwnedUpgrades(data.ownedUpgrades || {});
         setOwnedPets(data.ownedPets || []);
         setEquippedPets(data.equippedPets || []);
+        if (data.settings) setSettings(data.settings);
       } catch (e) {
         console.error('Failed to load save', e);
       }
@@ -420,9 +460,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets };
+    const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings };
     localStorage.setItem('clicker_sim_save', JSON.stringify(data));
-  }, [clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets]);
+  }, [clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings]);
 
   // --- Game Logic ---
 
@@ -435,11 +475,18 @@ export default function App() {
     setTotalClicksEver(prev => prev + gained);
     
     // Floating text
-    const id = Date.now();
-    setFloatingTexts(prev => [...prev, { id, x: clientX, y: clientY, value: `+${gained}` }]);
-    setTimeout(() => {
-      setFloatingTexts(prev => prev.filter(t => t.id !== id));
-    }, 1000);
+    if (settings.showFloatingText) {
+      const id = Date.now();
+      setFloatingTexts(prev => [...prev, { id, x: clientX, y: clientY, value: `+${gained}` }]);
+      setTimeout(() => {
+        setFloatingTexts(prev => prev.filter(t => t.id !== id));
+      }, 1000);
+    }
+
+    // Vibration
+    if (settings.vibration && 'vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
 
     // Animation trigger
     setIsClicking(true);
@@ -558,7 +605,7 @@ export default function App() {
               onClick={() => setShowChangelog(true)}
               className="flex items-center gap-1 group"
             >
-              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.4.1</p>
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.5.0</p>
               <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
             </button>
           </div>
@@ -655,7 +702,8 @@ export default function App() {
             {[
               { id: 'shop', icon: ShoppingBag, label: 'Shop' },
               { id: 'pets', icon: Egg, label: 'Pets' },
-              { id: 'stats', icon: TrendingUp, label: 'Stats' }
+              { id: 'stats', icon: TrendingUp, label: 'Stats' },
+              { id: 'settings', icon: Settings, label: 'Settings' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -866,30 +914,6 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => {
-                      const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets };
-                      localStorage.setItem('clicker_sim_save', JSON.stringify(data));
-                      alert('Game Saved!');
-                    }}
-                    className="p-3 rounded-xl bg-slate-800 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ShoppingBag className="w-3 h-3" /> Manual Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('Are you sure you want to reset ALL progress? This cannot be undone.')) {
-                        localStorage.removeItem('clicker_sim_save');
-                        window.location.reload();
-                      }
-                    }}
-                    className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[10px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <RotateCcw className="w-3 h-3" /> Reset Data
-                  </button>
-                </div>
-
                 <div className="space-y-3">
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Achievements</h3>
                   {[
@@ -914,6 +938,89 @@ export default function App() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Game Configuration</h3>
+                  
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { 
+                        id: 'showFloatingText', 
+                        label: 'Floating Text', 
+                        icon: settings.showFloatingText ? Eye : EyeOff,
+                        desc: 'Show click numbers on screen'
+                      },
+                      { 
+                        id: 'vibration', 
+                        label: 'Haptic Feedback', 
+                        icon: Smartphone,
+                        desc: 'Vibrate on click (Mobile)'
+                      },
+                      { 
+                        id: 'lowGraphics', 
+                        label: 'Low Graphics', 
+                        icon: Zap,
+                        desc: 'Reduce visual effects'
+                      },
+                    ].map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => setSettings(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof prev] }))}
+                        className="w-full p-4 rounded-2xl bg-slate-800/50 border border-white/10 flex justify-between items-center hover:bg-slate-800 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400">
+                            <item.icon className="w-5 h-5" />
+                          </div>
+                          <div className="text-left">
+                            <h4 className="font-bold text-sm text-slate-200">{item.label}</h4>
+                            <p className="text-[10px] text-slate-500 font-medium">{item.desc}</p>
+                          </div>
+                        </div>
+                        <div className={cn(
+                          "w-12 h-6 rounded-full relative transition-colors",
+                          settings[item.id as keyof typeof settings] ? "bg-emerald-500" : "bg-slate-700"
+                        )}>
+                          <motion.div 
+                            animate={{ x: settings[item.id as keyof typeof settings] ? 24 : 4 }}
+                            className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Data Management</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => {
+                        const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings };
+                        localStorage.setItem('clicker_sim_save', JSON.stringify(data));
+                        alert('Game Saved!');
+                      }}
+                      className="p-4 rounded-2xl bg-slate-800 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-colors flex flex-col items-center justify-center gap-2"
+                    >
+                      <ShoppingBag className="w-5 h-5 text-emerald-400" /> Manual Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to reset ALL progress? This cannot be undone.')) {
+                          localStorage.removeItem('clicker_sim_save');
+                          window.location.reload();
+                        }
+                      }}
+                      className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-[10px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/20 transition-colors flex flex-col items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="w-5 h-5" /> Reset Data
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
