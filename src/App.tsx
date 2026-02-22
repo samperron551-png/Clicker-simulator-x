@@ -154,6 +154,32 @@ const UPGRADES: Upgrade[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.6.0',
+    date: '2026-02-22',
+    codename: 'QUALITY-FLOW',
+    publicTitle: 'The QoL Expansion',
+    category: 'Feature Update / QoL',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Streamline gameplay loops for late-game players.',
+          'Problem Solved: Repetitive clicking for upgrades and eggs.',
+          'Player Impact: Faster progression and rewards for returning players.'
+        ]
+      },
+      {
+        title: '3️⃣ PRIMARY FEATURE DROP',
+        items: [
+          '⭐ Feature: Buy Max Upgrades - One-click to spend all possible clicks on an upgrade.',
+          '⭐ Feature: Hatch 5x - Speed up your pet collection with bulk hatching.',
+          '⭐ System: Offline Earnings - Earn 10% of your CPS while away (up to 2 hours).',
+          '⭐ UI: Multiplier Display - See your total multiplier in the stats tab.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.5.1',
     date: '2026-02-22',
     codename: 'SAVE-SURE',
@@ -471,6 +497,31 @@ export default function App() {
         setOwnedPets(data.ownedPets || []);
         setEquippedPets(data.equippedPets || []);
         if (data.settings) setSettings(data.settings);
+
+        // Offline Earnings Calculation
+        if (data.lastSaveTime) {
+          const now = Date.now();
+          const secondsAway = Math.floor((now - data.lastSaveTime) / 1000);
+          if (secondsAway > 60) {
+            // Calculate CPS at the time of saving (approximate)
+            const globalMult = (1 + (data.rebirths || 0)) * 1; // Base mult
+            const cps = Object.entries(data.ownedUpgrades || {}).reduce((acc, [id, count]) => {
+              const upgrade = UPGRADES.find(u => u.id === id);
+              if (upgrade && upgrade.type === 'auto') return acc + (Number(upgrade.value) * Number(count));
+              return acc;
+            }, 0) * globalMult;
+
+            if (cps > 0) {
+              const cappedSeconds = Math.min(secondsAway, 7200); // Cap at 2 hours
+              const offlineGained = cps * cappedSeconds * 0.1; // 10% efficiency
+              if (offlineGained > 0) {
+                setClicks(prev => prev + offlineGained);
+                setTotalClicksEver(prev => prev + offlineGained);
+                alert(`Welcome back! You earned ${formatNumber(offlineGained)} clicks while away.`);
+              }
+            }
+          }
+        }
       } catch (e) {
         console.error('Failed to load save', e);
       }
@@ -481,7 +532,16 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     const timeout = setTimeout(() => {
-      const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets, settings };
+      const data = { 
+        clicks, 
+        totalClicksEver, 
+        rebirths, 
+        ownedUpgrades, 
+        ownedPets, 
+        equippedPets, 
+        settings,
+        lastSaveTime: Date.now()
+      };
       localStorage.setItem('clicker_sim_save', JSON.stringify(data));
     }, 2000); // Debounce save to every 2 seconds for performance
     return () => clearTimeout(timeout);
@@ -529,6 +589,34 @@ export default function App() {
     }
   };
 
+  const buyMaxUpgrade = (upgrade: Upgrade) => {
+    let currentClicks = clicks;
+    let currentCount = ownedUpgrades[upgrade.id] || 0;
+    let totalCost = 0;
+    let boughtCount = 0;
+
+    while (true) {
+      const nextCost = Math.floor(upgrade.baseCost * Math.pow(upgrade.costMultiplier, currentCount + boughtCount));
+      if (currentClicks >= nextCost) {
+        currentClicks -= nextCost;
+        totalCost += nextCost;
+        boughtCount++;
+      } else {
+        break;
+      }
+      // Safety break to prevent infinite loops if cost multiplier is too low
+      if (boughtCount > 1000) break;
+    }
+
+    if (boughtCount > 0) {
+      setClicks(prev => prev - totalCost);
+      setOwnedUpgrades(prev => ({
+        ...prev,
+        [upgrade.id]: (prev[upgrade.id] || 0) + boughtCount
+      }));
+    }
+  };
+
   const handleRebirth = () => {
     if (clicks >= rebirthCost) {
       setRebirths(prev => prev + 1);
@@ -545,36 +633,43 @@ export default function App() {
     }
   };
 
-  const hatchEgg = (egg: EggType) => {
-    if (clicks >= egg.cost) {
-      setClicks(prev => prev - egg.cost);
+  const hatchEgg = (egg: EggType, count: number = 1) => {
+    const totalCost = egg.cost * count;
+    if (clicks >= totalCost) {
+      setClicks(prev => prev - totalCost);
       
-      // Randomly pick a pet based on chances
-      const roll = Math.random() * 100;
-      let cumulative = 0;
-      let selectedPetId = egg.pets[0].petId;
-      
-      for (const p of egg.pets) {
-        cumulative += p.chance;
-        if (roll <= cumulative) {
-          selectedPetId = p.petId;
-          break;
+      const newPets: OwnedPet[] = [];
+      let lastPet: Pet | null = null;
+
+      for (let i = 0; i < count; i++) {
+        // Randomly pick a pet based on chances
+        const roll = Math.random() * 100;
+        let cumulative = 0;
+        let selectedPetId = egg.pets[0].petId;
+        
+        for (const p of egg.pets) {
+          cumulative += p.chance;
+          if (roll <= cumulative) {
+            selectedPetId = p.petId;
+            break;
+          }
+        }
+        
+        const instanceId = Math.random().toString(36).substring(2, 9);
+        newPets.push({ instanceId, petId: selectedPetId });
+        lastPet = PETS[selectedPetId];
+
+        if (PETS[selectedPetId].rarity === 'Legendary' || PETS[selectedPetId].rarity === 'Epic') {
+          confetti({
+            particleCount: 100,
+            spread: 60,
+            origin: { y: 0.7 }
+          });
         }
       }
       
-      const instanceId = Math.random().toString(36).substring(2, 9);
-      const newPet: OwnedPet = { instanceId, petId: selectedPetId };
-      
-      setOwnedPets(prev => [...prev, newPet]);
-      setHatchingPet(PETS[selectedPetId]);
-      
-      if (PETS[selectedPetId].rarity === 'Legendary' || PETS[selectedPetId].rarity === 'Epic') {
-        confetti({
-          particleCount: 100,
-          spread: 60,
-          origin: { y: 0.7 }
-        });
-      }
+      setOwnedPets(prev => [...prev, ...newPets]);
+      if (lastPet) setHatchingPet(lastPet);
       
       setTimeout(() => setHatchingPet(null), 3000);
     }
@@ -628,7 +723,7 @@ export default function App() {
               onClick={() => setShowChangelog(true)}
               className="flex items-center gap-1 group"
             >
-              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.5.1</p>
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.6.0</p>
               <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
             </button>
           </div>
@@ -754,32 +849,40 @@ export default function App() {
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Hatch Eggs</h3>
                   <div className="grid grid-cols-1 gap-3">
                     {EGGS.map(egg => (
-                      <button
-                        key={egg.id}
-                        onClick={() => hatchEgg(egg)}
-                        disabled={clicks < egg.cost}
-                        className={cn(
-                          "w-full p-4 rounded-2xl border transition-all text-left flex justify-between items-center group",
-                          clicks >= egg.cost 
-                            ? "bg-slate-800/50 border-white/10 hover:border-amber-500/50 hover:bg-slate-800" 
-                            : "bg-slate-900/30 border-white/5 opacity-60"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-400">
-                            <Egg className="w-6 h-6" />
+                      <div key={egg.id} className="flex gap-2">
+                        <button
+                          onClick={() => hatchEgg(egg)}
+                          disabled={clicks < egg.cost}
+                          className={cn(
+                            "flex-1 p-4 rounded-2xl border transition-all text-left flex justify-between items-center group",
+                            clicks >= egg.cost 
+                              ? "bg-slate-800/50 border-white/10 hover:border-amber-500/50 hover:bg-slate-800" 
+                              : "bg-slate-900/30 border-white/5 opacity-60"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-400">
+                              <Egg className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-sm text-slate-200">{egg.name}</h4>
+                              <p className="text-[10px] text-slate-500 font-medium">{formatNumber(egg.cost)} Clicks</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-bold text-sm text-slate-200">{egg.name}</h4>
-                            <p className="text-[10px] text-slate-500 font-medium">Hatch a random pet!</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className={cn("text-sm font-black", clicks >= egg.cost ? "text-amber-400" : "text-slate-500")}>
-                            {formatNumber(egg.cost)}
-                          </p>
-                        </div>
-                      </button>
+                        </button>
+                        <button
+                          onClick={() => hatchEgg(egg, 5)}
+                          disabled={clicks < egg.cost * 5}
+                          className={cn(
+                            "px-4 rounded-2xl border transition-all font-black text-xs uppercase tracking-tighter",
+                            clicks >= egg.cost * 5
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
+                              : "bg-slate-900/30 border-white/5 text-slate-600"
+                          )}
+                        >
+                          5x
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -824,41 +927,54 @@ export default function App() {
                     const canAfford = clicks >= cost;
 
                     return (
-                      <button
-                        key={upgrade.id}
-                        onClick={() => buyUpgrade(upgrade)}
-                        disabled={!canAfford}
-                        className={cn(
-                          "w-full p-4 rounded-2xl border transition-all text-left group relative overflow-hidden",
-                          canAfford 
-                            ? "bg-slate-800/50 border-white/10 hover:border-emerald-500/50 hover:bg-slate-800" 
-                            : "bg-slate-900/30 border-white/5 opacity-60"
-                        )}
-                      >
-                        <div className="flex justify-between items-start relative z-10">
-                          <div className="flex gap-3">
-                            <div className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center",
-                              upgrade.type === 'click' ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"
-                            )}>
-                              {upgrade.type === 'click' ? <MousePointer2 className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
+                      <div key={upgrade.id} className="flex gap-2">
+                        <button
+                          onClick={() => buyUpgrade(upgrade)}
+                          disabled={!canAfford}
+                          className={cn(
+                            "flex-1 p-4 rounded-2xl border transition-all text-left group relative overflow-hidden",
+                            canAfford 
+                              ? "bg-slate-800/50 border-white/10 hover:border-emerald-500/50 hover:bg-slate-800" 
+                              : "bg-slate-900/30 border-white/5 opacity-60"
+                          )}
+                        >
+                          <div className="flex justify-between items-start relative z-10">
+                            <div className="flex gap-3">
+                              <div className={cn(
+                                "w-10 h-10 rounded-xl flex items-center justify-center",
+                                upgrade.type === 'click' ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"
+                              )}>
+                                {upgrade.type === 'click' ? <MousePointer2 className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-sm text-slate-200">{upgrade.name}</h4>
+                                <p className="text-[10px] text-slate-500 font-medium">{upgrade.description}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-bold text-sm text-slate-200">{upgrade.name}</h4>
-                              <p className="text-[10px] text-slate-500 font-medium">{upgrade.description}</p>
+                            <div className="text-right">
+                              <p className={cn("text-sm font-black", canAfford ? "text-emerald-400" : "text-slate-500")}>
+                                {formatNumber(cost)}
+                              </p>
+                              <p className="text-[10px] font-bold text-slate-600 uppercase">Level {count}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className={cn("text-sm font-black", canAfford ? "text-emerald-400" : "text-slate-500")}>
-                              {formatNumber(cost)}
-                            </p>
-                            <p className="text-[10px] font-bold text-slate-600 uppercase">Level {count}</p>
-                          </div>
-                        </div>
-                        {canAfford && (
-                          <div className="absolute bottom-0 left-0 h-1 bg-emerald-500/20 w-full" />
-                        )}
-                      </button>
+                          {canAfford && (
+                            <div className="absolute bottom-0 left-0 h-1 bg-emerald-500/20 w-full" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => buyMaxUpgrade(upgrade)}
+                          disabled={!canAfford}
+                          className={cn(
+                            "px-3 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-tighter",
+                            canAfford
+                              ? "bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
+                              : "bg-slate-900/30 border-white/5 text-slate-600"
+                          )}
+                        >
+                          MAX
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -932,7 +1048,17 @@ export default function App() {
                     <Trophy className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Total Clicks Ever</p>
+                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Total Multiplier</p>
+                    <p className="text-3xl font-black text-white">{globalMultiplier.toFixed(2)}x</p>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-slate-800/30 border border-white/5 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Clicks Ever</p>
                     <p className="text-3xl font-black text-white">{formatNumber(totalClicksEver)}</p>
                   </div>
                 </div>
