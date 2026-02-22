@@ -156,6 +156,23 @@ const UPGRADES: Upgrade[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.6.2',
+    date: '2026-02-22',
+    codename: 'PET-LOYALTY',
+    publicTitle: 'The Pet Loyalty Update',
+    category: 'QoL / Balance',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Make rebirths feel more rewarding.',
+          'Problem Solved: Losing hard-earned pets on rebirth felt punishing.',
+          'Player Impact: You now keep all your pets and equipped status through rebirths!'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.6.1',
     date: '2026-02-22',
     codename: 'RARITY-GLOW',
@@ -704,8 +721,6 @@ export default function App() {
       setRebirths(prev => prev + 1);
       setClicks(0);
       setOwnedUpgrades({});
-      setOwnedPets([]);
-      setEquippedPets([]);
       confetti({
         particleCount: 150,
         spread: 70,
@@ -805,7 +820,7 @@ export default function App() {
               onClick={() => setShowChangelog(true)}
               className="flex items-center gap-1 group"
             >
-              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.6.1</p>
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.6.2</p>
               <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
             </button>
           </div>
