@@ -10,7 +10,15 @@ import {
   Trophy,
   ChevronRight,
   Plus,
-  Sparkles
+  Sparkles,
+  Egg,
+  Dog,
+  Cat,
+  Rabbit,
+  Bird,
+  Ghost,
+  Flame,
+  Star
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cn } from '@/src/lib/utils';
@@ -25,6 +33,27 @@ interface Upgrade {
   costMultiplier: number;
   value: number;
   type: 'click' | 'auto';
+}
+
+interface Pet {
+  id: string;
+  name: string;
+  multiplier: number;
+  rarity: 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
+  icon: any;
+  color: string;
+}
+
+interface EggType {
+  id: string;
+  name: string;
+  cost: number;
+  pets: { petId: string; chance: number }[];
+}
+
+interface OwnedPet {
+  instanceId: string;
+  petId: string;
 }
 
 interface FloatingText {
@@ -117,6 +146,31 @@ const UPGRADES: Upgrade[] = [
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.4.0',
+    date: '2026-02-22',
+    codename: 'PET-PALOOZA',
+    publicTitle: 'The Pets & Eggs Update',
+    category: 'Major Content Expansion',
+    sections: [
+      {
+        title: '2️⃣ STRATEGIC OVERVIEW',
+        items: [
+          'Core Objective: Introduce a new layer of progression and collection.',
+          'Problem Solved: Progression felt linear; added variety and luck-based rewards.',
+          'Player Impact: Hatch eggs to find powerful pets that multiply your clicks!'
+        ]
+      },
+      {
+        title: '3️⃣ PRIMARY FEATURE DROP',
+        items: [
+          '⭐ Headline: Eggs & Pets - Spend clicks to hatch eggs and collect 7 unique pets.',
+          '⭐ Secondary: Pet Multipliers - Equipped pets provide massive global multipliers.',
+          '⭐ System: Inventory Management - View and equip your best pets in the new Pets tab.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.3.0',
     date: '2026-02-22',
@@ -230,6 +284,49 @@ const CHANGELOG: ChangelogEntry[] = [
   }
 ];
 
+const PETS: Record<string, Pet> = {
+  'dog': { id: 'dog', name: 'Dog', multiplier: 1.2, rarity: 'Common', icon: Dog, color: 'text-slate-400' },
+  'cat': { id: 'cat', name: 'Cat', multiplier: 1.2, rarity: 'Common', icon: Cat, color: 'text-slate-400' },
+  'rabbit': { id: 'rabbit', name: 'Rabbit', multiplier: 1.5, rarity: 'Uncommon', icon: Rabbit, color: 'text-emerald-400' },
+  'bird': { id: 'bird', name: 'Bird', multiplier: 1.5, rarity: 'Uncommon', icon: Bird, color: 'text-emerald-400' },
+  'ghost': { id: 'ghost', name: 'Ghost', multiplier: 2.5, rarity: 'Rare', icon: Ghost, color: 'text-blue-400' },
+  'dragon': { id: 'dragon', name: 'Dragon', multiplier: 5.0, rarity: 'Epic', icon: Flame, color: 'text-purple-400' },
+  'unicorn': { id: 'unicorn', name: 'Unicorn', multiplier: 15.0, rarity: 'Legendary', icon: Star, color: 'text-amber-400' },
+};
+
+const EGGS: EggType[] = [
+  {
+    id: 'basic_egg',
+    name: 'Basic Egg',
+    cost: 500,
+    pets: [
+      { petId: 'dog', chance: 45 },
+      { petId: 'cat', chance: 45 },
+      { petId: 'rabbit', chance: 10 },
+    ]
+  },
+  {
+    id: 'rare_egg',
+    name: 'Rare Egg',
+    cost: 5000,
+    pets: [
+      { petId: 'rabbit', chance: 40 },
+      { petId: 'bird', chance: 40 },
+      { petId: 'ghost', chance: 20 },
+    ]
+  },
+  {
+    id: 'legendary_egg',
+    name: 'Legendary Egg',
+    cost: 50000,
+    pets: [
+      { petId: 'ghost', chance: 60 },
+      { petId: 'dragon', chance: 35 },
+      { petId: 'unicorn', chance: 5 },
+    ]
+  }
+];
+
 // --- Main Component ---
 
 export default function App() {
@@ -238,18 +335,30 @@ export default function App() {
   const [totalClicksEver, setTotalClicksEver] = useState<number>(0);
   const [rebirths, setRebirths] = useState<number>(0);
   const [ownedUpgrades, setOwnedUpgrades] = useState<Record<string, number>>({});
+  const [ownedPets, setOwnedPets] = useState<OwnedPet[]>([]);
+  const [equippedPets, setEquippedPets] = useState<string[]>([]);
   
   // UI State
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
-  const [activeTab, setActiveTab] = useState<'shop' | 'stats' | 'changelog'>('shop');
+  const [activeTab, setActiveTab] = useState<'shop' | 'pets' | 'stats' | 'changelog'>('shop');
   const [isClicking, setIsClicking] = useState(false);
+  const [hatchingPet, setHatchingPet] = useState<Pet | null>(null);
 
   // Refs for game loop
   const lastAutoClickTime = useRef<number>(0);
 
   // --- Derived Stats ---
 
-  const globalMultiplier = 1 + (rebirths * 1); // 2x, 3x, 4x...
+  const petMultiplier = equippedPets.reduce((acc, instanceId) => {
+    const owned = ownedPets.find(p => p.instanceId === instanceId);
+    if (owned) {
+      const pet = PETS[owned.petId];
+      if (pet) return acc * pet.multiplier;
+    }
+    return acc;
+  }, 1);
+
+  const globalMultiplier = (1 + (rebirths * 1)) * petMultiplier; // 2x, 3x, 4x...
 
   const clickPower = (1 + Object.entries(ownedUpgrades).reduce((acc, [id, count]) => {
     const upgrade = UPGRADES.find(u => u.id === id);
@@ -276,6 +385,8 @@ export default function App() {
         setTotalClicksEver(data.totalClicksEver || 0);
         setRebirths(data.rebirths || 0);
         setOwnedUpgrades(data.ownedUpgrades || {});
+        setOwnedPets(data.ownedPets || []);
+        setEquippedPets(data.equippedPets || []);
       } catch (e) {
         console.error('Failed to load save', e);
       }
@@ -283,9 +394,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const data = { clicks, totalClicksEver, rebirths, ownedUpgrades };
+    const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets };
     localStorage.setItem('clicker_sim_save', JSON.stringify(data));
-  }, [clicks, totalClicksEver, rebirths, ownedUpgrades]);
+  }, [clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets]);
 
   // --- Game Logic ---
 
@@ -327,6 +438,8 @@ export default function App() {
       setRebirths(prev => prev + 1);
       setClicks(0);
       setOwnedUpgrades({});
+      setOwnedPets([]);
+      setEquippedPets([]);
       confetti({
         particleCount: 150,
         spread: 70,
@@ -334,6 +447,55 @@ export default function App() {
         colors: ['#FFD700', '#FFA500', '#FF4500']
       });
     }
+  };
+
+  const hatchEgg = (egg: EggType) => {
+    if (clicks >= egg.cost) {
+      setClicks(prev => prev - egg.cost);
+      
+      // Randomly pick a pet based on chances
+      const roll = Math.random() * 100;
+      let cumulative = 0;
+      let selectedPetId = egg.pets[0].petId;
+      
+      for (const p of egg.pets) {
+        cumulative += p.chance;
+        if (roll <= cumulative) {
+          selectedPetId = p.petId;
+          break;
+        }
+      }
+      
+      const instanceId = Math.random().toString(36).substring(2, 9);
+      const newPet: OwnedPet = { instanceId, petId: selectedPetId };
+      
+      setOwnedPets(prev => [...prev, newPet]);
+      setHatchingPet(PETS[selectedPetId]);
+      
+      if (PETS[selectedPetId].rarity === 'Legendary' || PETS[selectedPetId].rarity === 'Epic') {
+        confetti({
+          particleCount: 100,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+      }
+      
+      setTimeout(() => setHatchingPet(null), 3000);
+    }
+  };
+
+  const togglePet = (instanceId: string) => {
+    setEquippedPets(prev => {
+      if (prev.includes(instanceId)) {
+        return prev.filter(id => id !== instanceId);
+      } else {
+        if (prev.length >= 3) {
+          alert("Maximum 3 pets equipped!");
+          return prev;
+        }
+        return [...prev, instanceId];
+      }
+    });
   };
 
   // Auto-clicker loop
@@ -460,6 +622,7 @@ export default function App() {
           <div className="flex border-b border-white/5">
             {[
               { id: 'shop', icon: ShoppingBag, label: 'Shop' },
+              { id: 'pets', icon: Egg, label: 'Pets' },
               { id: 'stats', icon: TrendingUp, label: 'Stats' },
               { id: 'changelog', icon: History, label: 'Logs' }
             ].map(tab => (
@@ -484,6 +647,41 @@ export default function App() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {activeTab === 'shop' && (
               <>
+                {/* Eggs Section */}
+                <div className="space-y-3 mb-8">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Hatch Eggs</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    {EGGS.map(egg => (
+                      <button
+                        key={egg.id}
+                        onClick={() => hatchEgg(egg)}
+                        disabled={clicks < egg.cost}
+                        className={cn(
+                          "w-full p-4 rounded-2xl border transition-all text-left flex justify-between items-center group",
+                          clicks >= egg.cost 
+                            ? "bg-slate-800/50 border-white/10 hover:border-amber-500/50 hover:bg-slate-800" 
+                            : "bg-slate-900/30 border-white/5 opacity-60"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-400">
+                            <Egg className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm text-slate-200">{egg.name}</h4>
+                            <p className="text-[10px] text-slate-500 font-medium">Hatch a random pet!</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={cn("text-sm font-black", clicks >= egg.cost ? "text-amber-400" : "text-slate-500")}>
+                            {formatNumber(egg.cost)}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Rebirth Section */}
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 mb-6">
                   <div className="flex justify-between items-start mb-4">
@@ -565,6 +763,55 @@ export default function App() {
               </>
             )}
 
+            {activeTab === 'pets' && (
+              <div className="space-y-6">
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                  <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Equipped Multiplier</p>
+                  <p className="text-2xl font-black text-white">{petMultiplier.toFixed(1)}x</p>
+                  <p className="text-[10px] text-emerald-500/60 font-medium mt-1">Max 3 pets equipped at once</p>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Your Pets ({ownedPets.length})</h3>
+                  {ownedPets.length === 0 ? (
+                    <div className="p-8 text-center bg-slate-800/20 rounded-2xl border border-dashed border-white/5">
+                      <p className="text-sm text-slate-500">No pets yet. Hatch some eggs in the Shop!</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {ownedPets.map(owned => {
+                        const pet = PETS[owned.petId];
+                        const isEquipped = equippedPets.includes(owned.instanceId);
+                        return (
+                          <button
+                            key={owned.instanceId}
+                            onClick={() => togglePet(owned.instanceId)}
+                            className={cn(
+                              "w-full p-4 rounded-2xl border transition-all text-left flex justify-between items-center",
+                              isEquipped ? "bg-emerald-500/20 border-emerald-500/50" : "bg-slate-800/50 border-white/10 hover:bg-slate-800"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={cn("w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center", pet.color)}>
+                                <pet.icon className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-sm text-slate-200">{pet.name}</h4>
+                                <p className={cn("text-[10px] font-bold uppercase", pet.color)}>{pet.rarity}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-black text-emerald-400">{pet.multiplier}x</p>
+                              <p className="text-[10px] font-bold text-slate-500 uppercase">{isEquipped ? 'Equipped' : 'Unequipped'}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {activeTab === 'stats' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
@@ -591,7 +838,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     onClick={() => {
-                      const data = { clicks, totalClicksEver, rebirths, ownedUpgrades };
+                      const data = { clicks, totalClicksEver, rebirths, ownedUpgrades, ownedPets, equippedPets };
                       localStorage.setItem('clicker_sim_save', JSON.stringify(data));
                       alert('Game Saved!');
                     }}
@@ -713,6 +960,38 @@ export default function App() {
           background: rgba(255, 255, 255, 0.2);
         }
       `}} />
+
+      {/* Hatching Overlay */}
+      <AnimatePresence>
+        {hatchingPet && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl"
+          >
+            <motion.div
+              initial={{ scale: 0.5, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              className="text-center"
+            >
+              <div className="relative mb-8">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-[-40px] border-2 border-dashed border-emerald-500/20 rounded-full"
+                />
+                <div className={cn("w-32 h-32 mx-auto bg-white/5 rounded-3xl flex items-center justify-center shadow-2xl", hatchingPet.color)}>
+                  <hatchingPet.icon className="w-20 h-20" />
+                </div>
+              </div>
+              <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter">YOU GOT A {hatchingPet.name}!</h2>
+              <p className={cn("text-xl font-bold uppercase tracking-widest", hatchingPet.color)}>{hatchingPet.rarity}</p>
+              <p className="text-emerald-400 font-black text-2xl mt-4">{hatchingPet.multiplier}x Multiplier</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
