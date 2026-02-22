@@ -18,7 +18,8 @@ import {
   Bird,
   Ghost,
   Flame,
-  Star
+  Star,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cn } from '@/src/lib/utils';
@@ -340,9 +341,10 @@ export default function App() {
   
   // UI State
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
-  const [activeTab, setActiveTab] = useState<'shop' | 'pets' | 'stats' | 'changelog'>('shop');
+  const [activeTab, setActiveTab] = useState<'shop' | 'pets' | 'stats'>('shop');
   const [isClicking, setIsClicking] = useState(false);
   const [hatchingPet, setHatchingPet] = useState<Pet | null>(null);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   // Refs for game loop
   const lastAutoClickTime = useRef<number>(0);
@@ -528,7 +530,13 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight">CLICKER SIM X</h1>
-            <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest">Version 1.3.0</p>
+            <button 
+              onClick={() => setShowChangelog(true)}
+              className="flex items-center gap-1 group"
+            >
+              <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest group-hover:text-emerald-300 transition-colors">Version 1.3.0</p>
+              <History className="w-2.5 h-2.5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
+            </button>
           </div>
         </div>
 
@@ -623,8 +631,7 @@ export default function App() {
             {[
               { id: 'shop', icon: ShoppingBag, label: 'Shop' },
               { id: 'pets', icon: Egg, label: 'Pets' },
-              { id: 'stats', icon: TrendingUp, label: 'Stats' },
-              { id: 'changelog', icon: History, label: 'Logs' }
+              { id: 'stats', icon: TrendingUp, label: 'Stats' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -886,10 +893,63 @@ export default function App() {
                 </div>
               </div>
             )}
+          </div>
 
-            {activeTab === 'changelog' && (
-              <div className="space-y-8">
-                {CHANGELOG.slice(0, 1).map(entry => (
+          {/* Footer Info */}
+          <div className="p-4 border-t border-white/5 bg-black/20 text-center">
+            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+              Made with <Sparkles className="w-3 h-3 text-amber-500" /> for AI Studio
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      `}} />
+
+      {/* Changelog Modal */}
+      <AnimatePresence>
+        {showChangelog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col max-h-[80vh] shadow-2xl"
+            >
+              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-slate-800/50">
+                <div>
+                  <h2 className="text-xl font-black tracking-tight uppercase">Update Logs</h2>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Official Release History</p>
+                </div>
+                <button 
+                  onClick={() => setShowChangelog(false)}
+                  className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                {CHANGELOG.map(entry => (
                   <div key={entry.version} className="relative pl-6 border-l border-slate-800">
                     <div className="absolute left-[-5px] top-0 w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                     
@@ -933,33 +993,10 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Footer Info */}
-          <div className="p-4 border-t border-white/5 bg-black/20 text-center">
-            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-              Made with <Sparkles className="w-3 h-3 text-amber-500" /> for AI Studio
-            </p>
-          </div>
-        </div>
-      </main>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-      `}} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hatching Overlay */}
       <AnimatePresence>
